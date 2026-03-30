@@ -169,8 +169,6 @@ else:
 # ─────────────────────────────────────────────────────────────
 print("\n[6] Training final model on balanced training set...")
 
-# Re-fit on balanced data (search was already done above; this
-# ensures the saved model was trained on the balanced set)
 best_rf.fit(X_tr_bal, y_tr_bal)
 
 rf_scores_tr = best_rf.predict_proba(X_tr)[:, 1]
@@ -187,7 +185,7 @@ rf_pred   = (rf_scores_te >= threshold).astype(int)
 print(f"   Optimised threshold : {threshold:.4f}  "
       f"(default 0.50 replaced to minimise missed attacks)")
 
-# ─────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────
 # 8.  EVALUATION
 # ─────────────────────────────────────────────────────────────
 print("\n[8] Evaluating on test set...")
@@ -290,9 +288,6 @@ plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, "drift_robustness_rf.png"), dpi=120)
 plt.close()
 
-# ─────────────────────────────────────────────────────────────
-# 12. SAVE PLOTS
-# ─────────────────────────────────────────────────────────────
 print("\n[12] Saving plots...")
 
 save_cm(y_te, rf_pred,
@@ -305,9 +300,6 @@ save_roc(y_te, rf_scores_te,
          output_dir=OUTPUT_DIR,
          fname="roc_random_forest.png")
 
-# ─────────────────────────────────────────────────────────────
-# 13. SAVE MODEL
-# ─────────────────────────────────────────────────────────────
 print("\n[13] Saving model artefacts...")
 
 joblib.dump(best_rf, os.path.join(OUTPUT_DIR, "model_random_forest.pkl"))
@@ -320,9 +312,7 @@ print(f"   ✅ outputs_rf/roc_random_forest.png")
 print(f"   ✅ outputs_rf/rf_feature_importance.png")
 print(f"   ✅ outputs_rf/drift_robustness_rf.png")
 
-# ─────────────────────────────────────────────────────────────
-# 14. INFERENCE SNIPPET
-# ─────────────────────────────────────────────────────────────
+
 print("\n" + "=" * 60)
 print("  INFERENCE USAGE")
 print("=" * 60)
