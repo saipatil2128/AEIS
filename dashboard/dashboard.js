@@ -1,83 +1,68 @@
-const ctx = document.getElementById("trafficChart");
+const ctx = document.getElementById("trafficChart").getContext("2d");
 
-const THRESHOLD = 7000;
+let labels = [];
+let trafficData = [];
 
-const trafficChart = new Chart(ctx, {
-
-type: "line",
-
-data: {
-labels: [],
-datasets: [{
-label: "Packets per Interval",
-data: [],
-borderColor: "#38bdf8",
-fill: false,
-tension: 0.3
-}]
-},
-
-options: {
-
-responsive: true,
-
-plugins:{
-legend:{
-labels:{color:"white"}
-}
-},
-
-scales:{
-x:{ticks:{color:"white"}},
-y:{ticks:{color:"white"}}
-}
-
-}
-
+const chart = new Chart(ctx, {
+    type: "line",
+    data: {
+        labels: labels,
+        datasets: [{
+            label: "Packets per Interval",
+            data: trafficData,
+            borderColor: "#38bdf8",
+            fill: false,
+            tension: 0.3
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { labels: { color: "white" } }
+        },
+        scales: {
+            x: { ticks: { color: "white" } },
+            y: { ticks: { color: "white" } }
+        }
+    }
 });
-function updateChart(packetValue){
-    const now = new Date().toLocaleTimeString();
 
-    trafficChart.data.labels.push(now);
-    trafficChart.data.datasets[0].data.push(packetValue);
+function updateData() {
 
-    if(trafficChart.data.labels.length > 15){
-        trafficChart.data.labels.shift();
-        trafficChart.data.datasets[0].data.shift();
-    }
+    fetch("http://localhost:5000/traffic?nocache=" + Date.now())
+        .then(res => res.json())
+        .then(data => {
 
-    trafficChart.update();
+            const time = new Date().toLocaleTimeString();
+            labels.push(time);
+            trafficData.push(data.packets);
+
+            if (labels.length > 10) {
+                labels.shift();
+                trafficData.shift();
+            }
+
+            chart.update();
+        });
+
+    fetch("http://localhost:5000/alert?nocache=" + Date.now())
+        .then(res => res.json())
+        .then(alert => {
+
+            document.getElementById("deviceStatus").innerText = alert.status;
+            document.getElementById("threatLevel").innerText = alert.threat;
+            document.getElementById("rfProb").innerText = alert.rf_prob;
+            document.getElementById("isoScore").innerText = alert.iso_score;
+            document.getElementById("modelDecision").innerText = alert.status;
+
+            if (alert.status === "QUARANTINED") {
+                document.getElementById("deviceStatus").style.color = "red";
+            } else if (alert.status === "SUSPICIOUS") {
+                document.getElementById("deviceStatus").style.color = "orange";
+            } else {
+                document.getElementById("deviceStatus").style.color = "lightgreen";
+            }
+        });
 }
 
-setInterval(()=>{
-
-fetch("traffic.json?t=" + Date.now())
-.then(res=>res.json())
-.then(data=>{
-    updateChart(data.packets)
-})
-
-fetch("alert.json")
-.then(res=>res.json())
-.then(data=>{
-
-    const statusElement = document.getElementById("deviceStatus")
-    const threatElement = document.getElementById("threatLevel")
-
-    if(data.status === "QUARANTINED"){
-        statusElement.innerText = "QUARANTINED"
-        statusElement.className = "quarantine"
-
-        threatElement.innerText = "HIGH"
-        threatElement.className = "danger"
-    }else{
-        statusElement.innerText = "NORMAL"
-        statusElement.className = "normal"
-
-        threatElement.innerText = "LOW"
-        threatElement.className = "safe"
-    }
-
-})
-
-},2000)
+setInterval(updateData, 5000);
